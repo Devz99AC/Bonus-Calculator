@@ -336,6 +336,13 @@
       </div>
     </div>
     <div class="field">
+      <label>Goal Adjustment</label>
+      <div class="input-row">
+        <span class="prefix">$</span>
+        <input type="number" id="goal-adjustment" value="0" step="500" placeholder="0">
+      </div>
+    </div>
+    <div class="field">
       <label>Marketing Expenses</label>
       <div class="input-row">
         <span class="prefix">$</span>
@@ -425,7 +432,9 @@
 
 <script>
   const fmt = n => '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtSigned = n => (n < 0 ? '− ' : '') + fmt(n);
   const pct = n => (n*100).toFixed(2) + '%';
+  const formatRate = rate => (rate * 100).toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1') + '%';
 
   const brackets = [
     { label: 'Below monthly goal', rate: 0.005 },
@@ -453,6 +462,7 @@
   }
 
   function getBracketIdx(gp, goal) {
+    if (goal <= 0 || gp <= 0) return -1;
     if (gp <= goal) return 0;
     const over = (gp - goal) / goal;
     if (over <= 0.50) return 1;
@@ -466,51 +476,65 @@
     const expenses = parseFloat(document.getElementById('expenses').value) || 0;
     const salary = parseFloat(document.getElementById('salary').value) || 0;
     const goal = parseFloat(document.getElementById('goal').value) || 0;
+    const goalAdjustment = parseFloat(document.getElementById('goal-adjustment').value) || 0;
 
     const totalCost = expenses + salary;
     const gp = sales - totalCost;
-    const mcp = sales > 0 ? totalCost / sales : 0;
-    const zeroState = sales === 0 && expenses === 0 && salary === 0 && goal === 0;
+    const effectiveGoal = Math.max(goal + goalAdjustment, 0);
+    const mcp = sales > 0 ? totalCost / sales : totalCost > 0 ? Infinity : 0;
+    const zeroState = sales === 0 && expenses === 0 && salary === 0 && goal === 0 && goalAdjustment === 0;
     const stopped = !zeroState && expenses === 0;
 
     document.getElementById('stopped-banner').style.display = stopped ? 'block' : 'none';
 
     const adjIdx = zeroState ? -1 : getAdjIdx(mcp);
-    const bracketIdx = zeroState ? -1 : getBracketIdx(gp, goal);
+    const adjFactor = adjIdx === -1 ? 0 : adjustments[adjIdx].adj;
+    const bracketIdx = zeroState ? -1 : getBracketIdx(Math.max(gp, 0), effectiveGoal);
     const rate = bracketIdx === -1 ? 0 : brackets[bracketIdx].rate;
-    const rawBonus = zeroState ? 0 : Math.max(gp, 0) * rate;
-    const finalBonus = stopped ? 0 : rawBonus;
-    const goalDiff = goal > 0 ? (gp - goal) / goal : 0;
+    const rawBonus = zeroState || bracketIdx === -1 ? 0 : Math.max(gp, 0) * rate;
+    const adjAmt = rawBonus * adjFactor;
+    const finalBonus = stopped ? 0 : Math.max(rawBonus + adjAmt, 0);
+    const goalDiff = effectiveGoal > 0 ? (gp - effectiveGoal) / effectiveGoal : 0;
+    const mcpText = Number.isFinite(mcp) ? pct(mcp) : '∞';
 
     const gpEl = document.getElementById('m-gp');
-    gpEl.textContent = zeroState ? '$0' : fmt(gp);
+    gpEl.textContent = zeroState ? '$0' : fmtSigned(gp);
     gpEl.className = 'mv' + (gp > 0 ? ' green' : gp < 0 ? ' red' : '');
 
     const mcpEl = document.getElementById('m-mcp');
-    mcpEl.textContent = zeroState ? '0%' : pct(mcp);
-    mcpEl.className = 'mv' + (mcp > 0 ? ' blue' : '');
+    mcpEl.textContent = zeroState ? '0%' : mcpText;
+    mcpEl.className = 'mv' + (Number.isFinite(mcp) ? (mcp > 0 ? ' blue' : '') : ' yellow');
 
     const gdEl = document.getElementById('m-goal-diff');
-    gdEl.textContent = zeroState ? '0%' : (goalDiff >= 0 ? '+' : '') + (goalDiff * 100).toFixed(1) + '%';
+    gdEl.textContent = zeroState ? '0%' : effectiveGoal > 0 ? (goalDiff >= 0 ? '+' : '') + (goalDiff * 100).toFixed(1) + '%' : '--';
     gdEl.className = 'mv' + (goalDiff > 0 ? ' green' : goalDiff < 0 ? ' red' : '');
 
     document.getElementById('b-sales').textContent = zeroState ? '$0' : fmt(sales);
     document.getElementById('b-costs').textContent = zeroState ? '$0' : '− ' + fmt(totalCost);
-    document.getElementById('b-gp').textContent = zeroState ? '$0' : fmt(gp);
-    document.getElementById('b-rate').textContent = zeroState ? '0%' : (rate * 100) + '%';
+    document.getElementById('b-gp').textContent = zeroState ? '$0' : fmtSigned(gp);
+    document.getElementById('b-rate').textContent = zeroState ? '0%' : bracketIdx === -1 ? '--' : formatRate(rate);
     document.getElementById('b-raw').textContent = zeroState ? '$0' : fmt(rawBonus);
 
-    document.getElementById('b-adj-row').style.display = 'none';
+    document.getElementById('b-adj-row').style.display = zeroState ? 'none' : 'flex';
+    document.getElementById('b-adj-label').textContent = zeroState
+      ? '0% adjustment'
+      : adjustments[adjIdx].text + ' adjustment (MC% ' + mcpText + ' → ' + adjustments[adjIdx].label.toLowerCase() + ')';
+    document.getElementById('b-adj').textContent = zeroState ? '$0' : (adjAmt >= 0 ? '+ ' : '− ') + fmt(Math.abs(adjAmt));
+    document.getElementById('b-adj').className = 'bv' + (adjAmt > 0 ? ' pos' : adjAmt < 0 ? ' neg' : '');
 
     document.getElementById('final-bonus').textContent = zeroState ? '$0' : fmt(finalBonus);
-    document.getElementById('adj-summary').textContent = '';
+    document.getElementById('adj-summary').textContent = zeroState
+      ? ''
+      : effectiveGoal <= 0
+        ? 'Set a positive effective goal'
+        : 'MC% ' + mcpText + '  →  ' + adjustments[adjIdx].text;
 
     // Bracket table
     document.getElementById('bracket-table').querySelector('tbody').innerHTML =
       brackets.map((b, i) => `
         <tr class="${i === bracketIdx ? 'active-bracket' : ''}">
           <td class="label-col">${b.label}</td>
-          <td>${(b.rate*100)}% rate ${i === bracketIdx ? '✓' : ''}</td>
+          <td>${formatRate(b.rate)} rate ${i === bracketIdx ? '✓' : ''}</td>
         </tr>`).join('');
 
     // Adjustment table
@@ -522,7 +546,7 @@
         </tr>`).join('');
   }
 
-  ['sales','expenses','salary','goal'].forEach(id =>
+  ['sales','expenses','salary','goal','goal-adjustment'].forEach(id =>
     document.getElementById(id).addEventListener('input', calc)
   );
 
