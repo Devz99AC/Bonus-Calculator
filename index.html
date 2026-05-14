@@ -411,10 +411,10 @@
 
   <div class="result-bar">
     <div>
-      <div class="rl">Total Bonus <span id="cap-badge"></span></div>
+      <div class="rl">Total Bonus</div>
       <div class="rv" id="final-bonus">$0</div>
     </div>
-    <div style="text-align:right; font-size:13px; color:var(--muted); font-family:'DM Mono',monospace" id="adj-summary">0</div>
+    <div style="text-align:right; font-size:13px; color:var(--muted); font-family:'DM Mono',monospace" id="adj-summary"></div>
   </div>
 
   <footer>
@@ -476,11 +476,10 @@
     document.getElementById('stopped-banner').style.display = stopped ? 'block' : 'none';
 
     const adjIdx = zeroState ? -1 : getAdjIdx(mcp);
-    const adjFactor = adjIdx === -1 ? 0 : adjustments[adjIdx].adj;
     const bracketIdx = zeroState ? -1 : getBracketIdx(gp, goal);
     const rate = bracketIdx === -1 ? 0 : brackets[bracketIdx].rate;
     const rawBonus = zeroState ? 0 : Math.max(gp, 0) * rate;
-    const finalBonus = stopped ? 0 : rawBonus + rawBonus * adjFactor;
+    const finalBonus = stopped ? 0 : rawBonus;
     const goalDiff = goal > 0 ? (gp - goal) / goal : 0;
 
     const gpEl = document.getElementById('m-gp');
@@ -501,31 +500,10 @@
     document.getElementById('b-rate').textContent = zeroState ? '0%' : (rate * 100) + '%';
     document.getElementById('b-raw').textContent = zeroState ? '$0' : fmt(rawBonus);
 
-    const adjAmt = rawBonus * adjFactor;
-    document.getElementById('b-adj-label').textContent = zeroState
-      ? '0% adjustment'
-      : adjustments[adjIdx].text + ' adjustment (MC% ' + pct(mcp) + ' → ' + adjustments[adjIdx].label.toLowerCase() + ')';
-    document.getElementById('b-adj').textContent = zeroState ? '$0' : (adjAmt >= 0 ? '+ ' : '− ') + fmt(Math.abs(adjAmt));
-    document.getElementById('b-adj').className = 'bv' + (adjAmt > 0 ? ' pos' : adjAmt < 0 ? ' neg' : '');
-    document.getElementById('b-adj-row').style.display = zeroState || adjFactor !== 0 ? 'flex' : 'none';
+    document.getElementById('b-adj-row').style.display = 'none';
 
     document.getElementById('final-bonus').textContent = zeroState ? '$0' : fmt(finalBonus);
-    document.getElementById('adj-summary').textContent = zeroState ? '0' : 'MC% ' + pct(mcp) + '  →  ' + adjustments[adjIdx].text;
-
-    const badge = document.getElementById('cap-badge');
-    if (zeroState) {
-      badge.textContent = '';
-      badge.className = 'badge';
-      badge.style.display = 'none';
-    } else if (stopped) {
-      badge.textContent = 'stopped';
-      badge.className = 'badge badge-red';
-      badge.style.display = 'inline-block';
-    } else {
-      badge.textContent = 'no cap';
-      badge.className = 'badge badge-green';
-      badge.style.display = 'inline-block';
-    }
+    document.getElementById('adj-summary').textContent = '';
 
     // Bracket table
     document.getElementById('bracket-table').querySelector('tbody').innerHTML =
