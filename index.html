@@ -325,28 +325,28 @@
       <label>Total Sales</label>
       <div class="input-row">
         <span class="prefix">$</span>
-        <input type="number" id="sales" value="30000" min="0" step="100" placeholder="0">
+        <input type="number" id="sales" value="0" min="0" step="100" placeholder="0">
       </div>
     </div>
     <div class="field">
       <label>Monthly Goal</label>
       <div class="input-row">
         <span class="prefix">$</span>
-        <input type="number" id="goal" value="25000" min="0" step="500" placeholder="0">
+        <input type="number" id="goal" value="0" min="0" step="500" placeholder="0">
       </div>
     </div>
     <div class="field">
       <label>Marketing Expenses</label>
       <div class="input-row">
         <span class="prefix">$</span>
-        <input type="number" id="expenses" value="2000" min="0" step="100" placeholder="0">
+        <input type="number" id="expenses" value="0" min="0" step="100" placeholder="0">
       </div>
     </div>
     <div class="field">
       <label>Fixed Salary</label>
       <div class="input-row">
         <span class="prefix">$</span>
-        <input type="number" id="salary" value="400" min="0" step="50" placeholder="0">
+        <input type="number" id="salary" value="0" min="0" step="50" placeholder="0">
       </div>
     </div>
   </div>
@@ -359,15 +359,15 @@
   <div class="metrics-row">
     <div class="metric">
       <div class="ml">Gross Profit</div>
-      <div class="mv green" id="m-gp">$27,600</div>
+      <div class="mv" id="m-gp">$0</div>
     </div>
     <div class="metric">
       <div class="ml">Marketing Cost %</div>
-      <div class="mv blue" id="m-mcp">8.00%</div>
+      <div class="mv" id="m-mcp">0%</div>
     </div>
     <div class="metric">
       <div class="ml">vs Monthly Goal</div>
-      <div class="mv" id="m-goal-diff">+10.4%</div>
+      <div class="mv" id="m-goal-diff">0%</div>
     </div>
   </div>
 
@@ -385,40 +385,40 @@
   <div class="card" style="margin-bottom:1.5rem">
     <div class="breakdown-row">
       <span class="bl">Total Sales</span>
-      <span class="bv" id="b-sales">$30,000</span>
+      <span class="bv" id="b-sales">$0</span>
     </div>
     <div class="breakdown-row">
       <span class="bl">Minus Expenses + Salary</span>
-      <span class="bv neg" id="b-costs">− $2,400</span>
+      <span class="bv" id="b-costs">$0</span>
     </div>
     <div class="breakdown-row highlight">
       <span class="bl">Gross Profit</span>
-      <span class="bv" id="b-gp">$27,600</span>
+      <span class="bv" id="b-gp">$0</span>
     </div>
     <div class="breakdown-row">
       <span class="bl">Bonus Rate Applied</span>
-      <span class="bv" id="b-rate">1%</span>
+      <span class="bv" id="b-rate">0%</span>
     </div>
     <div class="breakdown-row highlight">
       <span class="bl">Raw Bonus</span>
-      <span class="bv" id="b-raw">$276.00</span>
+      <span class="bv" id="b-raw">$0</span>
     </div>
     <div class="breakdown-row" id="b-adj-row">
-      <span class="bl" id="b-adj-label">+ 50% adjustment</span>
-      <span class="bv pos" id="b-adj">+ $138.00</span>
+      <span class="bl" id="b-adj-label">0% adjustment</span>
+      <span class="bv" id="b-adj">$0</span>
     </div>
   </div>
 
   <div class="result-bar">
     <div>
       <div class="rl">Total Bonus <span id="cap-badge"></span></div>
-      <div class="rv" id="final-bonus">$414.00</div>
+      <div class="rv" id="final-bonus">$0</div>
     </div>
-    <div style="text-align:right; font-size:13px; color:var(--muted); font-family:'DM Mono',monospace" id="adj-summary"></div>
+    <div style="text-align:right; font-size:13px; color:var(--muted); font-family:'DM Mono',monospace" id="adj-summary">0</div>
   </div>
 
   <footer>
-    Based on Marketing Bonus Structure — Dec 16, 2025 &nbsp;·&nbsp; No cap applied
+    Based on Marketing Bonus Structure — Dec 16, 2025
   </footer>
 
 </div>
@@ -465,52 +465,66 @@
     const sales = parseFloat(document.getElementById('sales').value) || 0;
     const expenses = parseFloat(document.getElementById('expenses').value) || 0;
     const salary = parseFloat(document.getElementById('salary').value) || 0;
-    const goal = parseFloat(document.getElementById('goal').value) || 25000;
+    const goal = parseFloat(document.getElementById('goal').value) || 0;
 
     const totalCost = expenses + salary;
     const gp = sales - totalCost;
     const mcp = sales > 0 ? totalCost / sales : 0;
-    const stopped = expenses === 0;
+    const zeroState = sales === 0 && expenses === 0 && salary === 0 && goal === 0;
+    const stopped = !zeroState && expenses === 0;
 
     document.getElementById('stopped-banner').style.display = stopped ? 'block' : 'none';
 
-    const adjIdx = getAdjIdx(mcp);
-    const adjFactor = adjustments[adjIdx].adj;
-    const bracketIdx = getBracketIdx(gp, goal);
-    const rate = brackets[bracketIdx].rate;
-    const rawBonus = Math.max(gp, 0) * rate;
+    const adjIdx = zeroState ? -1 : getAdjIdx(mcp);
+    const adjFactor = adjIdx === -1 ? 0 : adjustments[adjIdx].adj;
+    const bracketIdx = zeroState ? -1 : getBracketIdx(gp, goal);
+    const rate = bracketIdx === -1 ? 0 : brackets[bracketIdx].rate;
+    const rawBonus = zeroState ? 0 : Math.max(gp, 0) * rate;
     const finalBonus = stopped ? 0 : rawBonus + rawBonus * adjFactor;
     const goalDiff = goal > 0 ? (gp - goal) / goal : 0;
 
-    document.getElementById('m-gp').textContent = fmt(gp);
-    document.getElementById('m-mcp').textContent = pct(mcp);
-    const gdEl = document.getElementById('m-goal-diff');
-    gdEl.textContent = (goalDiff >= 0 ? '+' : '') + (goalDiff * 100).toFixed(1) + '%';
-    gdEl.className = 'mv ' + (goalDiff >= 0 ? 'green' : 'red');
+    const gpEl = document.getElementById('m-gp');
+    gpEl.textContent = zeroState ? '$0' : fmt(gp);
+    gpEl.className = 'mv' + (gp > 0 ? ' green' : gp < 0 ? ' red' : '');
 
-    document.getElementById('b-sales').textContent = fmt(sales);
-    document.getElementById('b-costs').textContent = '− ' + fmt(totalCost);
-    document.getElementById('b-gp').textContent = fmt(gp);
-    document.getElementById('b-rate').textContent = (rate * 100) + '%';
-    document.getElementById('b-raw').textContent = fmt(rawBonus);
+    const mcpEl = document.getElementById('m-mcp');
+    mcpEl.textContent = zeroState ? '0%' : pct(mcp);
+    mcpEl.className = 'mv' + (mcp > 0 ? ' blue' : '');
+
+    const gdEl = document.getElementById('m-goal-diff');
+    gdEl.textContent = zeroState ? '0%' : (goalDiff >= 0 ? '+' : '') + (goalDiff * 100).toFixed(1) + '%';
+    gdEl.className = 'mv' + (goalDiff > 0 ? ' green' : goalDiff < 0 ? ' red' : '');
+
+    document.getElementById('b-sales').textContent = zeroState ? '$0' : fmt(sales);
+    document.getElementById('b-costs').textContent = zeroState ? '$0' : '− ' + fmt(totalCost);
+    document.getElementById('b-gp').textContent = zeroState ? '$0' : fmt(gp);
+    document.getElementById('b-rate').textContent = zeroState ? '0%' : (rate * 100) + '%';
+    document.getElementById('b-raw').textContent = zeroState ? '$0' : fmt(rawBonus);
 
     const adjAmt = rawBonus * adjFactor;
-    document.getElementById('b-adj-label').textContent =
-      adjustments[adjIdx].text + ' adjustment (MC% ' + pct(mcp) + ' → ' + adjustments[adjIdx].label.toLowerCase() + ')';
-    document.getElementById('b-adj').textContent = (adjAmt >= 0 ? '+ ' : '− ') + fmt(Math.abs(adjAmt));
-    document.getElementById('b-adj').className = 'bv ' + (adjAmt >= 0 ? 'pos' : 'neg');
-    document.getElementById('b-adj-row').style.display = adjFactor !== 0 ? 'flex' : 'none';
+    document.getElementById('b-adj-label').textContent = zeroState
+      ? '0% adjustment'
+      : adjustments[adjIdx].text + ' adjustment (MC% ' + pct(mcp) + ' → ' + adjustments[adjIdx].label.toLowerCase() + ')';
+    document.getElementById('b-adj').textContent = zeroState ? '$0' : (adjAmt >= 0 ? '+ ' : '− ') + fmt(Math.abs(adjAmt));
+    document.getElementById('b-adj').className = 'bv' + (adjAmt > 0 ? ' pos' : adjAmt < 0 ? ' neg' : '');
+    document.getElementById('b-adj-row').style.display = zeroState || adjFactor !== 0 ? 'flex' : 'none';
 
-    document.getElementById('final-bonus').textContent = fmt(finalBonus);
-    document.getElementById('adj-summary').textContent = 'MC% ' + pct(mcp) + '  →  ' + adjustments[adjIdx].text;
+    document.getElementById('final-bonus').textContent = zeroState ? '$0' : fmt(finalBonus);
+    document.getElementById('adj-summary').textContent = zeroState ? '0' : 'MC% ' + pct(mcp) + '  →  ' + adjustments[adjIdx].text;
 
     const badge = document.getElementById('cap-badge');
-    if (stopped) {
+    if (zeroState) {
+      badge.textContent = '';
+      badge.className = 'badge';
+      badge.style.display = 'none';
+    } else if (stopped) {
       badge.textContent = 'stopped';
       badge.className = 'badge badge-red';
+      badge.style.display = 'inline-block';
     } else {
       badge.textContent = 'no cap';
       badge.className = 'badge badge-green';
+      badge.style.display = 'inline-block';
     }
 
     // Bracket table
