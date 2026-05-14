@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing Bonus Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141416;
+    --surface2: #1c1c1f;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0efe8;
+    --muted: #7a7975;
+    --accent: #c8f060;
+    --accent-dim: rgba(200,240,96,0.12);
+    --accent-dim2: rgba(200,240,96,0.06);
+    --danger: #ff6b5b;
+    --danger-dim: rgba(255,107,91,0.1);
+    --success: #5bffb0;
+    --success-dim: rgba(91,255,176,0.1);
+    --info: #60b4f0;
+    --info-dim: rgba(96,180,240,0.1);
+    --warn: #f0c060;
+    --warn-dim: rgba(240,192,96,0.1);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.5rem;
+  }
+
+  .logo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .tagline {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    margin-top: 4px;
+  }
+
+  .tagline span { color: var(--accent); }
+
+  .inputs-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+
+  .field {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    transition: border-color 0.2s;
+  }
+
+  .field:focus-within {
+    border-color: var(--accent);
+    background: var(--accent-dim2);
+  }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .prefix {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    color: var(--muted);
+  }
+
+  .field input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    width: 100%;
+  }
+
+  .field input::placeholder { color: var(--muted); opacity: 0.4; }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.875rem 1rem;
+  }
+
+  .metric .ml { font-size: 11px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em; }
+  .metric .mv { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; }
+  .metric .mv.green { color: var(--success); }
+  .metric .mv.red { color: var(--danger); }
+  .metric .mv.blue { color: var(--info); }
+  .metric .mv.yellow { color: var(--warn); }
+
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-header {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  td {
+    padding: 9px 1.25rem;
+    font-size: 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  td:last-child {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  td.label-col { color: var(--muted); }
+
+  tr.active-bracket td {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  tr.active-adj td {
+    background: var(--info-dim);
+    color: var(--info);
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 1.25rem;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 14px;
+  }
+
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-row .bl { color: var(--muted); }
+  .breakdown-row .bv { font-family: 'DM Mono', monospace; font-weight: 500; }
+  .breakdown-row.highlight { background: var(--surface2); }
+  .breakdown-row .bv.pos { color: var(--success); }
+  .breakdown-row .bv.neg { color: var(--danger); }
+
+  .result-bar {
+    background: var(--surface);
+    border: 1.5px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent-dim);
+    pointer-events: none;
+  }
+
+  .result-bar .rl { font-size: 13px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.05em; }
+  .result-bar .rv {
+    font-family: 'DM Mono', monospace;
+    font-size: 38px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 100px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .badge-green { background: var(--success-dim); color: var(--success); }
+  .badge-red { background: var(--danger-dim); color: var(--danger); }
+  .badge-yellow { background: var(--warn-dim); color: var(--warn); }
+
+  .stopped-banner {
+    background: var(--danger-dim);
+    border: 0.5px solid rgba(255,107,91,0.3);
+    border-radius: var(--radius-sm);
+    padding: 10px 1.25rem;
+    font-size: 13px;
+    color: var(--danger);
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+
+  footer {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 0.5px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 500px) {
+    .inputs-section { grid-template-columns: 1fr; }
+    .metrics-row { grid-template-columns: 1fr 1fr; }
+    .tagline { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-row">
+      <div class="logo-dot"></div>
+      <h1>Marketing Bonus Calculator</h1>
+    </div>
+    <div class="tagline">Your bonus, <span>calculated.</span></div>
+  </header>
+
+  <div class="section-title">Inputs</div>
+  <div class="inputs-section">
+    <div class="field">
+      <label>Total Sales</label>
+      <div class="input-row">
+        <span class="prefix">$</span>
+        <input type="number" id="sales" value="30000" min="0" step="100" placeholder="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Monthly Goal</label>
+      <div class="input-row">
+        <span class="prefix">$</span>
+        <input type="number" id="goal" value="25000" min="0" step="500" placeholder="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Marketing Expenses</label>
+      <div class="input-row">
+        <span class="prefix">$</span>
+        <input type="number" id="expenses" value="2000" min="0" step="100" placeholder="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Fixed Salary</label>
+      <div class="input-row">
+        <span class="prefix">$</span>
+        <input type="number" id="salary" value="400" min="0" step="50" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <div id="stopped-banner" class="stopped-banner">
+    ⚠ Marketing budget is $0 — bonuses are stopped when marketing is stopped.
+  </div>
+
+  <div class="section-title">Key Metrics</div>
+  <div class="metrics-row">
+    <div class="metric">
+      <div class="ml">Gross Profit</div>
+      <div class="mv green" id="m-gp">$27,600</div>
+    </div>
+    <div class="metric">
+      <div class="ml">Marketing Cost %</div>
+      <div class="mv blue" id="m-mcp">8.00%</div>
+    </div>
+    <div class="metric">
+      <div class="ml">vs Monthly Goal</div>
+      <div class="mv" id="m-goal-diff">+10.4%</div>
+    </div>
+  </div>
+
+  <div class="section-title">Rate Brackets</div>
+  <div class="card" style="margin-bottom:1.25rem">
+    <table id="bracket-table"><tbody></tbody></table>
+  </div>
+
+  <div class="section-title">Marketing Cost % Adjustment</div>
+  <div class="card" style="margin-bottom:1.25rem">
+    <table id="adj-table"><tbody></tbody></table>
+  </div>
+
+  <div class="section-title">Breakdown</div>
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="breakdown-row">
+      <span class="bl">Total Sales</span>
+      <span class="bv" id="b-sales">$30,000</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="bl">Minus Expenses + Salary</span>
+      <span class="bv neg" id="b-costs">− $2,400</span>
+    </div>
+    <div class="breakdown-row highlight">
+      <span class="bl">Gross Profit</span>
+      <span class="bv" id="b-gp">$27,600</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="bl">Bonus Rate Applied</span>
+      <span class="bv" id="b-rate">1%</span>
+    </div>
+    <div class="breakdown-row highlight">
+      <span class="bl">Raw Bonus</span>
+      <span class="bv" id="b-raw">$276.00</span>
+    </div>
+    <div class="breakdown-row" id="b-adj-row">
+      <span class="bl" id="b-adj-label">+ 50% adjustment</span>
+      <span class="bv pos" id="b-adj">+ $138.00</span>
+    </div>
+  </div>
+
+  <div class="result-bar">
+    <div>
+      <div class="rl">Total Bonus <span id="cap-badge"></span></div>
+      <div class="rv" id="final-bonus">$414.00</div>
+    </div>
+    <div style="text-align:right; font-size:13px; color:var(--muted); font-family:'DM Mono',monospace" id="adj-summary"></div>
+  </div>
+
+  <footer>
+    Based on Marketing Bonus Structure — Dec 16, 2025 &nbsp;·&nbsp; No cap applied
+  </footer>
+
+</div>
+
+<script>
+  const fmt = n => '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2});
+  const pct = n => (n*100).toFixed(2) + '%';
+
+  const brackets = [
+    { label: 'Below monthly goal', rate: 0.005 },
+    { label: '0% – 50% above goal', rate: 0.01 },
+    { label: '51% – 75% above goal', rate: 0.0125 },
+    { label: '76% – 100% above goal', rate: 0.015 },
+    { label: 'Over 100% above goal', rate: 0.02 }
+  ];
+
+  const adjustments = [
+    { label: 'Up to 5%', threshold: 0.05, adj: 1.0, text: '+100%' },
+    { label: 'Up to 10%', threshold: 0.10, adj: 0.5, text: '+50%' },
+    { label: 'Up to 12.5%', threshold: 0.125, adj: 0.25, text: '+25%' },
+    { label: 'Up to 15%', threshold: 0.15, adj: 0.0, text: '+0%' },
+    { label: 'Up to 17.5%', threshold: 0.175, adj: -0.5, text: '−50%' },
+    { label: 'Up to 20%', threshold: 0.20, adj: -0.75, text: '−75%' },
+    { label: 'Over 20%', threshold: Infinity, adj: -1.0, text: '−100%' }
+  ];
+
+  function getAdjIdx(mcp) {
+    for (let i = 0; i < adjustments.length; i++) {
+      if (mcp <= adjustments[i].threshold) return i;
+    }
+    return adjustments.length - 1;
+  }
+
+  function getBracketIdx(gp, goal) {
+    if (gp <= goal) return 0;
+    const over = (gp - goal) / goal;
+    if (over <= 0.50) return 1;
+    if (over <= 0.75) return 2;
+    if (over <= 1.00) return 3;
+    return 4;
+  }
+
+  function calc() {
+    const sales = parseFloat(document.getElementById('sales').value) || 0;
+    const expenses = parseFloat(document.getElementById('expenses').value) || 0;
+    const salary = parseFloat(document.getElementById('salary').value) || 0;
+    const goal = parseFloat(document.getElementById('goal').value) || 25000;
+
+    const totalCost = expenses + salary;
+    const gp = sales - totalCost;
+    const mcp = sales > 0 ? totalCost / sales : 0;
+    const stopped = expenses === 0;
+
+    document.getElementById('stopped-banner').style.display = stopped ? 'block' : 'none';
+
+    const adjIdx = getAdjIdx(mcp);
+    const adjFactor = adjustments[adjIdx].adj;
+    const bracketIdx = getBracketIdx(gp, goal);
+    const rate = brackets[bracketIdx].rate;
+    const rawBonus = Math.max(gp, 0) * rate;
+    const finalBonus = stopped ? 0 : rawBonus + rawBonus * adjFactor;
+    const goalDiff = goal > 0 ? (gp - goal) / goal : 0;
+
+    document.getElementById('m-gp').textContent = fmt(gp);
+    document.getElementById('m-mcp').textContent = pct(mcp);
+    const gdEl = document.getElementById('m-goal-diff');
+    gdEl.textContent = (goalDiff >= 0 ? '+' : '') + (goalDiff * 100).toFixed(1) + '%';
+    gdEl.className = 'mv ' + (goalDiff >= 0 ? 'green' : 'red');
+
+    document.getElementById('b-sales').textContent = fmt(sales);
+    document.getElementById('b-costs').textContent = '− ' + fmt(totalCost);
+    document.getElementById('b-gp').textContent = fmt(gp);
+    document.getElementById('b-rate').textContent = (rate * 100) + '%';
+    document.getElementById('b-raw').textContent = fmt(rawBonus);
+
+    const adjAmt = rawBonus * adjFactor;
+    document.getElementById('b-adj-label').textContent =
+      adjustments[adjIdx].text + ' adjustment (MC% ' + pct(mcp) + ' → ' + adjustments[adjIdx].label.toLowerCase() + ')';
+    document.getElementById('b-adj').textContent = (adjAmt >= 0 ? '+ ' : '− ') + fmt(Math.abs(adjAmt));
+    document.getElementById('b-adj').className = 'bv ' + (adjAmt >= 0 ? 'pos' : 'neg');
+    document.getElementById('b-adj-row').style.display = adjFactor !== 0 ? 'flex' : 'none';
+
+    document.getElementById('final-bonus').textContent = fmt(finalBonus);
+    document.getElementById('adj-summary').textContent = 'MC% ' + pct(mcp) + '  →  ' + adjustments[adjIdx].text;
+
+    const badge = document.getElementById('cap-badge');
+    if (stopped) {
+      badge.textContent = 'stopped';
+      badge.className = 'badge badge-red';
+    } else {
+      badge.textContent = 'no cap';
+      badge.className = 'badge badge-green';
+    }
+
+    // Bracket table
+    document.getElementById('bracket-table').querySelector('tbody').innerHTML =
+      brackets.map((b, i) => `
+        <tr class="${i === bracketIdx ? 'active-bracket' : ''}">
+          <td class="label-col">${b.label}</td>
+          <td>${(b.rate*100)}% rate ${i === bracketIdx ? '✓' : ''}</td>
+        </tr>`).join('');
+
+    // Adjustment table
+    document.getElementById('adj-table').querySelector('tbody').innerHTML =
+      adjustments.map((a, i) => `
+        <tr class="${i === adjIdx ? 'active-adj' : ''}">
+          <td class="label-col">${a.label}</td>
+          <td>${a.text} ${i === adjIdx ? '✓' : ''}</td>
+        </tr>`).join('');
+  }
+
+  ['sales','expenses','salary','goal'].forEach(id =>
+    document.getElementById(id).addEventListener('input', calc)
+  );
+
+  calc();
+</script>
+</body>
+</html>
